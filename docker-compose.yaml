@@ -1,21 +1,25 @@
-version: '3.5'
+version: '3.8'
 
 networks:
   zabx_net:
   grafana_net:
+  prometheus_network:
+  influxdb_network:
 
 volumes:
 prometheus_data:
 
 services:
-  grafana:
-    image: grafana/grafana
+    grafana:
+    image: grafana/grafana-enterprise
     container_name: grafana
-    depends_on: #phụ thuộc giữa các dịch vụ của một ứng dụng và chỉ định thứ tự mà các dịch vụ này nên được khởi động và dừng.
-      - prometheus 
-      - zabix-server-mysql 
-
-
+    restart: always
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./grafana:/var/lib/grafana
+volumes:
+  grafana-storage: {}
 
 
 #prometheus
