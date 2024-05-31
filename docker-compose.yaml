@@ -8,7 +8,7 @@ networks:
 
 volumes:
 prometheus_data:
-
+grafana-storage: {}
 services:
     grafana:
     image: grafana/grafana-enterprise
@@ -18,8 +18,6 @@ services:
       - '3000:3000'
     volumes:
       - ./grafana:/var/lib/grafana
-volumes:
-  grafana-storage: {}
 
 
 #prometheus
