@@ -1,0 +1,22 @@
+version: '3.5'
+
+networks:
+  zabx_net:
+  grafana_net:
+
+volumes:
+prometheus_data:
+
+services:
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    depends_on: #phụ thuộc giữa các dịch vụ của một ứng dụng và chỉ định thứ tự mà các dịch vụ này nên được khởi động và dừng.
+      - prometheus 
+      - zabix-server-mysql 
+
+
+
+
+#prometheus
+#zabbix
