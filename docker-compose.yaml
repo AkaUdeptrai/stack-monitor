@@ -12,7 +12,7 @@ grafana-storage:
 
 services:
 #Grafana
-    grafana:
+  grafana:
     image: grafana/grafana-enterprise
     container_name: grafana
     restart: always
@@ -30,20 +30,104 @@ services:
       - prometheus_network:
       - influxdb_network:
 #Prometheus
-    prometheus:
-      image: prom/prometheus:v2.36.2
-      volumes:
-        - ./prometheus/:/etc/prometheus/
-        - prometheus_data:/prometheus
-      command:
-        - '--config.file=/etc/prometheus/prometheus.yml'
-        - '--storage.tsdb.path=/prometheus'
-        - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-        - '--web.console.templates=/usr/share/prometheus/consoles'
-      ports:
-        - 9090:9090
-      networks:
-        - prometheus_network
-#zabbix
-
+  prometheus:
+    image: prom/prometheus:v2.36.2
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+    networks:
+      - prometheus_network
+#zabbix-server
+  zabbix-server:
+    container_name: zabbix-server
+    image: zabbix/zabbix-server-mysql:ubuntu-5.0.1
+    networks:
+      - network-zabbix
+    links:
+      - mysql
+    restart: always
+    ports:
+      - '10051:10051'
+    volumes:
+      - './zabbix/alertscripts:/usr/lib/zabbix/alertscripts'
+    environment:
+      - DB_SERVER_HOST=
+      - MYSQL_DATABASE=
+      - MYSQL_USER=
+      - MYSQL_PASSWORD=
+    depends_on:
+      - mysql
+#zabbix-frontend    
+  zabbix-frontend:
+    container_name: zabbix-frontend
+    image: zabbix/zabbix-web-apache-mysql:ubuntu-5.0.1
+    networks:
+      - network-zabbix
+    links:
+      - mysql
+    restart: always
+    ports:
+      - '80:8080'
+      - '443:8443'
+    environment:
+      - DB_SERVER_HOST=
+      - MYSQL_DATABASE=
+      - MYSQL_USER=
+      - MYSQL_PASSWORD=
+      - PHP_TZ=Asia/Ho_Chi_Minh
+    depends_on:
+      - mysql
 #mysql
+mysql:
+    container_name: mysql
+    image: mysql:5.7
+    networks:
+      - network-zabbix
+    ports:
+      - '3306:3306'
+    volumes:
+      - './zabbix/mysql:/var/lib/data'
+    environment:
+      - MYSQL_ROOT_PASSWORD=
+      - MYSQL_DATABASE=
+      - MYSQL_USER=
+      - MYSQL_PASSWORD=
+#zabbix-agent
+zabbix-agent:
+    container_name: zabbix-agent
+    image: zabbix/zabbix-agent2:alpine-5.0.1
+    user: root
+    networks:
+      - network-zabbix
+    links:
+      - zabbix-server
+    restart: always
+    privileged: true
+    volumes:
+      - /var/run:/var/run
+    ports:
+      - '10050:10050'
+    environment:
+      - ZBX_HOSTNAME=
+      - ZBX_SERVER_HOST=
+#cadvisor
+cadvisor:
+    container_name: cadvisor
+    image: google/cadvisor
+    network_mode: "host"
+    ports:
+      - "8080:8080"
+    volumes: 
+      - "/:/rootfs"
+      - "/var/run:/var/run"
+      - "/sys:/sys"
+      - "/var/lib/docker/:/var/lib/docker"
+      - "/dev/disk/:/dev/disk"
+    privileged: true
